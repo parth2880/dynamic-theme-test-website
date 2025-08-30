@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 interface ThemeColors {
   primary: string;
@@ -33,19 +34,53 @@ interface ThemeData {
   themeId: string;
   themeName: string;
   timestamp?: string;
+  signature?: string;
+}
+
+// Verify webhook signature
+function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const themeData: ThemeData = await request.json();
+    const body = await request.text();
+    const themeData: ThemeData = JSON.parse(body);
 
     // Extract theme information as per the guide
-    const { theme, themeId, themeName } = themeData;
+    const { theme, themeId, themeName, signature } = themeData;
 
     if (!theme || !themeId) {
       return NextResponse.json(
         { error: 'Invalid webhook payload - missing theme or themeId' },
         { status: 400 }
+      );
+    }
+
+    // Verify webhook signature if WEBHOOK_SECRET is set
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+    if (webhookSecret && signature) {
+      const isValid = verifyWebhookSignature(body, signature, webhookSecret);
+      if (!isValid) {
+        console.error('Invalid webhook signature');
+        return NextResponse.json(
+          { error: 'Invalid signature' },
+          { status: 401 }
+        );
+      }
+    } else if (webhookSecret && !signature) {
+      console.warn('Webhook secret is configured but no signature provided');
+      return NextResponse.json(
+        { error: 'Missing signature' },
+        { status: 401 }
       );
     }
 
@@ -55,13 +90,13 @@ export async function POST(request: NextRequest) {
       themeName,
       theme,
       timestamp: new Date().toISOString(),
+      signature: signature ? 'verified' : 'none',
     });
 
     // In a real implementation, you would:
-    // 1. Validate the webhook signature
-    // 2. Save theme to database
-    // 3. Update CSS variables dynamically
-    // 4. Trigger a rebuild if needed
+    // 1. Save theme to database
+    // 2. Update CSS variables dynamically
+    // 3. Trigger a rebuild if needed
 
     // For demo purposes, we'll store the theme in memory
     // In production, save to database or file system
@@ -100,5 +135,9 @@ export async function GET() {
     status: 'healthy',
     message: 'Theme webhook endpoint is ready',
     timestamp: new Date().toISOString(),
+    features: {
+      signatureVerification: !!process.env.WEBHOOK_SECRET,
+      environment: process.env.NODE_ENV || 'development',
+    },
   });
 }

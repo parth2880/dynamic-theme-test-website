@@ -10,6 +10,7 @@ A Next.js test website that demonstrates dynamic theme updates via webhooks. Thi
 - **Theme Persistence**: Themes are saved to localStorage
 - **Smooth Transitions**: CSS transitions for theme changes
 - **Responsive Design**: Works on all device sizes
+- **Security**: Webhook signature verification
 
 ## Getting Started
 
@@ -26,12 +27,52 @@ A Next.js test website that demonstrates dynamic theme updates via webhooks. Thi
    npm install
    ```
 
-3. Run the development server:
+3. Set up environment variables:
+   ```bash
+   cp env.example .env.local
+   ```
+   
+   Edit `.env.local` and add your webhook secret:
+   ```env
+   WEBHOOK_SECRET=your-super-secret-webhook-key-here
+   ```
+
+4. Run the development server:
    ```bash
    npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Security
+
+### Webhook Signature Verification
+
+The webhook endpoint supports signature verification for security. To enable it:
+
+1. **Set the webhook secret** in your environment variables:
+   ```env
+   WEBHOOK_SECRET=your-super-secret-webhook-key-here
+   ```
+
+2. **Include the signature** in your webhook payload:
+   ```json
+   {
+     "theme": { ... },
+     "themeId": "theme_123",
+     "themeName": "My Theme",
+     "signature": "hmac-sha256-signature-here"
+   }
+   ```
+
+3. **Generate the signature** in your theme generator:
+   ```javascript
+   const crypto = require('crypto');
+   const signature = crypto
+     .createHmac('sha256', webhookSecret)
+     .update(JSON.stringify(payload))
+     .digest('hex');
+   ```
 
 ## Webhook Integration
 
@@ -67,7 +108,8 @@ The website includes a webhook endpoint at `/api/webhook` that accepts POST requ
   },
   "themeId": "theme_123",
   "themeName": "My Custom Theme",
-  "timestamp": "2024-01-15T10:30:00Z"
+  "timestamp": "2024-01-15T10:30:00Z",
+  "signature": "hmac-sha256-signature-here"
 }
 ```
 
@@ -86,7 +128,20 @@ The website includes a webhook endpoint at `/api/webhook` that accepts POST requ
 
 Check if the webhook endpoint is ready:
 ```bash
-curl http://localhost:3000/api/webhook
+curl https://your-site.com/api/webhook
+```
+
+Response includes security status:
+```json
+{
+  "status": "healthy",
+  "message": "Theme webhook endpoint is ready",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "features": {
+    "signatureVerification": true,
+    "environment": "production"
+  }
+}
 ```
 
 ## Deployment
@@ -95,7 +150,9 @@ curl http://localhost:3000/api/webhook
 
 1. Push your code to GitHub
 2. Connect your repository to Vercel
-3. Deploy automatically
+3. Add environment variables in Vercel dashboard:
+   - `WEBHOOK_SECRET`: Your webhook secret key
+4. Deploy automatically
 
 ### Deploy to Netlify
 
@@ -103,6 +160,7 @@ curl http://localhost:3000/api/webhook
 2. Connect your repository to Netlify
 3. Set build command: `npm run build`
 4. Set publish directory: `.next`
+5. Add environment variables in Netlify dashboard
 
 ## Theme Pusher Integration
 
@@ -112,6 +170,7 @@ After deploying, register your site in your theme pusher system with:
 - **Site URL**: Your deployed website URL
 - **Webhook URL**: `https://your-site.com/api/webhook`
 - **Site ID**: A unique identifier for your site
+- **Webhook Secret**: The same secret you set in environment variables
 
 ### 2. Test Webhook
 
@@ -177,7 +236,7 @@ src/
 You can test the webhook endpoint manually using curl:
 
 ```bash
-curl -X POST http://localhost:3000/api/webhook \
+curl -X POST https://your-site.com/api/webhook \
   -H "Content-Type: application/json" \
   -d '{
     "theme": {
@@ -204,6 +263,19 @@ curl -X POST http://localhost:3000/api/webhook \
     "themeId": "test_theme_123",
     "themeName": "Test Purple Theme"
   }'
+```
+
+### With Signature Verification
+
+```bash
+# Generate signature (in your theme generator)
+PAYLOAD='{"theme":{...},"themeId":"test_123","themeName":"Test"}'
+SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "your-secret" | cut -d' ' -f2)
+
+# Send webhook with signature
+curl -X POST https://your-site.com/api/webhook \
+  -H "Content-Type: application/json" \
+  -d "{\"theme\":{...},\"themeId\":\"test_123\",\"themeName\":\"Test\",\"signature\":\"$SIGNATURE\"}"
 ```
 
 ## Contributing
