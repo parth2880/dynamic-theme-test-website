@@ -1,8 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface ThemeColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+  neutral: string;
+  info: string;
+  success: string;
+  warning: string;
+  error: string;
+}
+
+interface ThemeRadius {
+  box: number;
+  field: number;
+  selector: number;
+}
+
+interface ThemeEffects {
+  depth: boolean;
+  noise: boolean;
+}
+
+interface Theme {
+  colors: ThemeColors;
+  radius: ThemeRadius;
+  effects: ThemeEffects;
+}
+
+interface ThemeData {
+  theme: Theme;
+  themeId: string;
+  themeName: string;
+  timestamp?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const themeData = await request.json();
+    const themeData: ThemeData = await request.json();
 
     // Extract theme information as per the guide
     const { theme, themeId, themeName } = themeData;
@@ -13,23 +48,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Generate CSS variables as shown in the guide
-    const cssVariables = `
-      :root {
-        --color-primary: ${theme.colors.primary};
-        --color-secondary: ${theme.colors.secondary};
-        --color-accent: ${theme.colors.accent};
-        --color-neutral: ${theme.colors.neutral};
-        --color-info: ${theme.colors.info};
-        --color-success: ${theme.colors.success};
-        --color-warning: ${theme.colors.warning};
-        --color-error: ${theme.colors.error};
-        --radius-box: ${theme.radius.box}px;
-        --radius-field: ${theme.radius.field}px;
-        --radius-selector: ${theme.radius.selector}px;
-      }
-    `;
 
     // Log the webhook for debugging
     console.log('Theme webhook received:', {
@@ -67,7 +85,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Simulate saving theme to storage
-async function saveThemeToStorage(themeData: any) {
+async function saveThemeToStorage(themeData: ThemeData): Promise<void> {
   // In production, save to database or file system
   // For demo, we'll just log it
   console.log('Saving theme to storage:', themeData);

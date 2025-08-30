@@ -3,7 +3,7 @@
 import { useTheme } from './ThemeProvider';
 
 export function PortfolioSite() {
-    const { theme, isUpdating } = useTheme();
+    const { isUpdating } = useTheme();
 
     return (
         <div className={`min-h-screen transition-all duration-500 ${isUpdating ? 'opacity-75' : 'opacity-100'}`}>
@@ -43,7 +43,7 @@ export function PortfolioSite() {
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div>
                             <p className="text-muted text-lg leading-relaxed">
-                                I'm a passionate developer with 5+ years of experience building web applications.
+                                I&apos;m a passionate developer with 5+ years of experience building web applications.
                                 I specialize in React, Node.js, and modern web technologies.
                             </p>
                         </div>
