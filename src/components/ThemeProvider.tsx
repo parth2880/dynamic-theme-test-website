@@ -63,6 +63,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Function to apply webhook theme data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const applyWebhookTheme = (themeData: any) => {
     console.log('🎨 APPLYING WEBHOOK THEME TO WEBSITE:');
     console.log('📋 Theme data received:', themeData);

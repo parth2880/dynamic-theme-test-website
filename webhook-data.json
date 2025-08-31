@@ -1,0 +1,54 @@
+{
+  "timestamp": "2025-08-31T19:13:59.941Z",
+  "themeId": "cmf00l0fi002trt3yagr12omh",
+  "themeName": "success theme",
+  "theme": {
+    "colors": {
+      "primary": "#10b981",
+      "secondary": "#10b981",
+      "accent": "#10b981",
+      "neutral": "#10b981",
+      "info": "#10b981",
+      "success": "#10b981",
+      "warning": "#10b981",
+      "error": "#10b981"
+    },
+    "radius": {
+      "box": 8,
+      "field": 6,
+      "selector": 4
+    },
+    "effects": {
+      "depth": true,
+      "noise": false
+    }
+  },
+  "fullWebhookData": {
+    "theme": {
+      "colors": {
+        "primary": "#10b981",
+        "secondary": "#10b981",
+        "accent": "#10b981",
+        "neutral": "#10b981",
+        "info": "#10b981",
+        "success": "#10b981",
+        "warning": "#10b981",
+        "error": "#10b981"
+      },
+      "radius": {
+        "box": 8,
+        "field": 6,
+        "selector": 4
+      },
+      "effects": {
+        "depth": true,
+        "noise": false
+      }
+    },
+    "themeId": "cmf00l0fi002trt3yagr12omh",
+    "themeName": "success theme",
+    "timestamp": "2025-08-31T19:13:59.927Z",
+    "signature": "a32fda7659fe02d22c3edbd5cf62e10c0d0a2f2088843863a5c4261e527450d0"
+  },
+  "cssVariables": "\n    :root {\n      --color-primary: #10b981;\n      --color-secondary: #10b981;\n      --color-accent: #10b981;\n      --color-neutral: #10b981;\n      --color-info: #10b981;\n      --color-success: #10b981;\n      --color-warning: #10b981;\n      --color-error: #10b981;\n      --radius-box: 8px;\n      --radius-field: 6px;\n      --radius-selector: 4px;\n      \n      /* Legacy variables for backward compatibility */\n      --primary: #10b981;\n      --secondary: #10b981;\n      --accent: #10b981;\n      --destructive: #10b981;\n      --success: #10b981;\n      --warning: #10b981;\n    }\n  "
+}

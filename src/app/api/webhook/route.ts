@@ -170,6 +170,21 @@ export async function POST(request: NextRequest) {
 
     console.log('Webhook data stored for client access:', webhookInfo);
 
+    // Store the webhook data for client access
+    try {
+      // Store in a simple way that doesn't require external function imports
+      const fs = await import('fs');
+      const path = await import('path');
+
+      // Create a simple JSON file to store the latest webhook data
+      const webhookDataPath = path.join(process.cwd(), 'webhook-data.json');
+      await fs.promises.writeFile(webhookDataPath, JSON.stringify(webhookInfo, null, 2));
+
+      console.log('Webhook data stored to file:', webhookDataPath);
+    } catch (error) {
+      console.error('Failed to store webhook data:', error);
+    }
+
     // Return the theme data so the client can apply it
     return NextResponse.json({
       success: true,
