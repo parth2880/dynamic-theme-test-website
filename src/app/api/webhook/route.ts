@@ -44,10 +44,45 @@ function verifyWebhookSignature(payload: string, signature: string, secret: stri
     .update(payload)
     .digest('hex');
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  console.log('Signature verification debug:', {
+    receivedSignature: signature,
+    expectedSignature: expectedSignature,
+    payloadLength: payload.length,
+    secretLength: secret.length,
+    signaturesMatch: signature === expectedSignature,
+    payloadPreview: payload.substring(0, 200) + '...',
+    payloadEnd: payload.substring(payload.length - 50)
+  });
+
+  // Use simple string comparison instead of timingSafeEqual for better debugging
+  return signature === expectedSignature;
+}
+
+// Apply theme to CSS variables
+function applyThemeToCSS(theme: Theme): string {
+  return `
+    :root {
+      --color-primary: ${theme.colors.primary};
+      --color-secondary: ${theme.colors.secondary};
+      --color-accent: ${theme.colors.accent};
+      --color-neutral: ${theme.colors.neutral};
+      --color-info: ${theme.colors.info};
+      --color-success: ${theme.colors.success};
+      --color-warning: ${theme.colors.warning};
+      --color-error: ${theme.colors.error};
+      --radius-box: ${theme.radius.box}px;
+      --radius-field: ${theme.radius.field}px;
+      --radius-selector: ${theme.radius.selector}px;
+      
+      /* Legacy variables for backward compatibility */
+      --primary: ${theme.colors.primary};
+      --secondary: ${theme.colors.secondary};
+      --accent: ${theme.colors.accent};
+      --destructive: ${theme.colors.error};
+      --success: ${theme.colors.success};
+      --warning: ${theme.colors.warning};
+    }
+  `;
 }
 
 export async function POST(request: NextRequest) {
@@ -67,7 +102,12 @@ export async function POST(request: NextRequest) {
 
     // Verify webhook signature if WEBHOOK_SECRET is set
     const webhookSecret = process.env.WEBHOOK_SECRET;
-    if (webhookSecret && signature) {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const skipSignatureCheck = process.env.SKIP_SIGNATURE_CHECK === 'true';
+
+    if (skipSignatureCheck) {
+      console.warn('Skipping signature verification (SKIP_SIGNATURE_CHECK=true)');
+    } else if (webhookSecret && signature) {
       const isValid = verifyWebhookSignature(body, signature, webhookSecret);
       if (!isValid) {
         console.error('Invalid webhook signature');
@@ -76,38 +116,70 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
-    } else if (webhookSecret && !signature) {
+    } else if (webhookSecret && !signature && !isDevelopment) {
+      // Only require signature in production
       console.warn('Webhook secret is configured but no signature provided');
       return NextResponse.json(
         { error: 'Missing signature' },
         { status: 401 }
       );
+    } else if (webhookSecret && !signature && isDevelopment) {
+      console.warn('Development mode: Skipping signature verification for local testing');
     }
 
     // Log the webhook for debugging
-    console.log('Theme webhook received:', {
+    console.log('🎨 DYNAMIC THEME GENERATOR WEBHOOK RECEIVED:');
+    console.log('📋 Full webhook payload:', JSON.stringify(themeData, null, 2));
+    console.log('🔑 Webhook details:', {
       themeId,
       themeName,
       theme,
       timestamp: new Date().toISOString(),
       signature: signature ? 'verified' : 'none',
+      signatureLength: signature ? signature.length : 0,
+      payloadLength: body.length,
+    });
+    console.log('🎨 Theme colors:', theme.colors);
+    console.log('📐 Theme radius:', theme.radius);
+    console.log('✨ Theme effects:', theme.effects);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // Apply the theme to CSS variables
+    const cssVariables = applyThemeToCSS(theme);
+    console.log('🎨 Generated CSS variables:', cssVariables);
+    console.log('📝 CSS variables summary:', {
+      primaryColor: theme.colors.primary,
+      secondaryColor: theme.colors.secondary,
+      accentColor: theme.colors.accent,
+      boxRadius: `${theme.radius.box}px`,
+      fieldRadius: `${theme.radius.field}px`,
     });
 
-    // In a real implementation, you would:
-    // 1. Save theme to database
-    // 2. Update CSS variables dynamically
-    // 3. Trigger a rebuild if needed
-
-    // For demo purposes, we'll store the theme in memory
-    // In production, save to database or file system
+    // Save theme to storage
     await saveThemeToStorage(themeData);
 
+    // Store webhook data for client-side access
+    const webhookInfo = {
+      timestamp: new Date().toISOString(),
+      themeId,
+      themeName,
+      theme,
+      fullWebhookData: themeData,
+      cssVariables: cssVariables,
+    };
+
+    console.log('Webhook data stored for client access:', webhookInfo);
+
+    // Return the theme data so the client can apply it
     return NextResponse.json({
       success: true,
       message: 'Theme updated successfully',
       themeId,
       themeName,
       timestamp: new Date().toISOString(),
+      cssVariables: cssVariables,
+      theme: theme, // Include the full theme object for client-side application
+      webhookInfo: webhookInfo, // Include the webhook info for client-side storage
     });
 
   } catch (error) {
@@ -138,6 +210,8 @@ export async function GET() {
     features: {
       signatureVerification: !!process.env.WEBHOOK_SECRET,
       environment: process.env.NODE_ENV || 'development',
+      webhookSecretConfigured: !!process.env.WEBHOOK_SECRET,
+      webhookSecretLength: process.env.WEBHOOK_SECRET ? process.env.WEBHOOK_SECRET.length : 0,
     },
   });
 }

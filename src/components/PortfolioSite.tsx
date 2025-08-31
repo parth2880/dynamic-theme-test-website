@@ -3,10 +3,25 @@
 import { useTheme } from './ThemeProvider';
 
 export function PortfolioSite() {
-    const { isUpdating } = useTheme();
+    const { isUpdating, lastWebhookUpdate } = useTheme();
 
     return (
         <div className={`min-h-screen transition-all duration-500 ${isUpdating ? 'opacity-75' : 'opacity-100'}`}>
+            {/* Theme Status Indicator */}
+            {lastWebhookUpdate && (
+                <div className="fixed top-4 left-4 z-50 bg-success/10 border border-success/20 rounded-lg p-3 shadow-lg">
+                    <div className="text-success font-medium text-sm">Theme Updated!</div>
+                    <div className="text-muted text-xs">
+                        {new Date(lastWebhookUpdate).toLocaleTimeString()}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--color-primary)' }}></div>
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--color-secondary)' }}></div>
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--color-accent)' }}></div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <header className="bg-card border-b border-border">
                 <div className="container mx-auto px-4 py-6">

@@ -1,94 +1,86 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTheme } from './ThemeProvider';
 
 export function WebhookEndpoint() {
-    const { updateTheme, isUpdating } = useTheme();
+    const { updateTheme, isUpdating, lastWebhookUpdate } = useTheme();
+    const [lastWebhookData, setLastWebhookData] = useState<any>(null);
+    const [webhookHistory, setWebhookHistory] = useState<any[]>([]);
 
-    // Simulate webhook endpoint for demo purposes
-    const handleWebhookTest = () => {
-        // Test theme data matching the guide's expected format
-        const testThemeData = {
-            theme: {
-                colors: {
-                    primary: "#8b5cf6",
-                    secondary: "#94a3b8",
-                    accent: "#f97316",
-                    neutral: "#6b7280",
-                    info: "#06b6d4",
-                    success: "#10b981",
-                    warning: "#f59e0b",
-                    error: "#ef4444"
-                },
-                radius: {
-                    box: 12,
-                    field: 8,
-                    selector: 6
-                },
-                effects: {
-                    depth: true,
-                    noise: false
-                }
-            },
-            themeId: "test_theme_123",
-            themeName: "Test Purple Theme",
-            timestamp: new Date().toISOString()
-        };
-
-        // Simulate webhook call to our API endpoint
-        fetch('/api/webhook', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(testThemeData),
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Webhook response:', data);
-
-                // Also update the local theme for immediate visual feedback
-                const localTheme = {
-                    background: '#1a1a1a',
-                    foreground: '#ffffff',
-                    primary: testThemeData.theme.colors.primary,
-                    secondary: testThemeData.theme.colors.secondary,
-                    accent: testThemeData.theme.colors.accent,
-                    muted: '#a1a1aa',
-                    border: '#4b5563',
-                    card: '#262626',
-                    popover: '#262626',
-                    destructive: testThemeData.theme.colors.error,
-                    success: testThemeData.theme.colors.success,
-                    warning: testThemeData.theme.colors.warning,
-                };
-
-                updateTheme(localTheme);
-            })
-            .catch(error => {
-                console.error('Webhook test failed:', error);
-            });
+    const formatTime = (timestamp: string) => {
+        return new Date(timestamp).toLocaleTimeString();
     };
+
+    // Load existing webhook history from localStorage
+    useEffect(() => {
+        const existingHistory = JSON.parse(localStorage.getItem('webhook-history') || '[]');
+        setWebhookHistory(existingHistory);
+        if (existingHistory.length > 0) {
+            setLastWebhookData(existingHistory[existingHistory.length - 1]);
+        }
+    }, []);
+
+    // Function to handle webhook response and store data
+    const handleWebhookResponse = (webhookInfo: any) => {
+        console.log('📥 WebhookEndpoint received webhook data:', webhookInfo);
+        setLastWebhookData(webhookInfo);
+        setWebhookHistory(prev => [...prev, webhookInfo].slice(-10)); // Keep last 10
+
+        // Store in localStorage
+        const existingHistory = JSON.parse(localStorage.getItem('webhook-history') || '[]');
+        const updatedHistory = [...existingHistory, webhookInfo].slice(-10);
+        localStorage.setItem('webhook-history', JSON.stringify(updatedHistory));
+    };
+
+    // Make the function available globally for the webhook endpoint
+    useEffect(() => {
+        (window as any).handleWebhookResponse = handleWebhookResponse;
+        return () => {
+            delete (window as any).handleWebhookResponse;
+        };
+    }, []);
 
     return (
         <div className="fixed bottom-4 right-4 z-50">
-            <div className="bg-card border border-border rounded-lg p-4 shadow-lg">
-                <h3 className="text-sm font-semibold mb-2 text-foreground">Theme Webhook Status</h3>
+            <div className="bg-card border border-border rounded-lg p-4 shadow-lg max-w-xs">
+                <h3 className="text-sm font-semibold mb-2 text-foreground">Dynamic Theme Generator</h3>
                 <div className="flex items-center gap-2 mb-3">
                     <div className={`w-2 h-2 rounded-full ${isUpdating ? 'bg-warning animate-pulse' : 'bg-success'}`} />
                     <span className="text-xs text-foreground">
                         {isUpdating ? 'Updating theme...' : 'Ready for webhooks'}
                     </span>
                 </div>
+
+                {lastWebhookUpdate && (
+                    <div className="mb-3 p-2 bg-success/10 border border-success/20 rounded text-xs">
+                        <div className="text-success font-medium">Last Update</div>
+                        <div className="text-muted">{formatTime(lastWebhookUpdate)}</div>
+                    </div>
+                )}
+
                 <button
-                    onClick={handleWebhookTest}
+                    onClick={() => {
+                        // Show the last webhook data received from dynamic theme generator
+                        if (lastWebhookData) {
+                            console.log('📋 LAST WEBHOOK DATA FROM DYNAMIC THEME GENERATOR:', lastWebhookData);
+                            alert(`Last webhook data:\n\n${JSON.stringify(lastWebhookData, null, 2)}`);
+                        } else {
+                            alert('No webhook data received yet. Send a webhook from your dynamic theme generator first.');
+                        }
+                    }}
                     disabled={isUpdating}
-                    className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-primary/90 disabled:opacity-50 font-medium"
+                    className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-primary/90 disabled:opacity-50 font-medium w-full mb-2"
                 >
-                    Test Webhook
+                    Show DTG Webhook Data
                 </button>
-                <div className="mt-2 text-xs text-muted">
+
+                <div className="text-xs text-muted">
                     Endpoint: /api/webhook
+                </div>
+
+                <div className="text-xs text-muted mt-1">
+                    Real webhooks from your theme generator will update the site automatically
                 </div>
             </div>
         </div>
